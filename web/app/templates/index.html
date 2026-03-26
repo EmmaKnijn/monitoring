@@ -1,0 +1,220 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Knowledge Hub - System Dashboard</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/css/bootstrap.min.css" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        body { background-color: #f8f9fa; }
+        .card { margin-bottom: 20px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); }
+        .stat-value { font-size: 1.5rem; font-weight: bold; }
+        .stat-label { color: #6c757d; font-size: 0.9rem; }
+        .chart-container { position: relative; height: 400px; width: 100%; }
+        .clickable-row { cursor: pointer; }
+    </style>
+</head>
+<body>
+    <nav class="navbar navbar-dark bg-dark">
+        <div class="container">
+            <a class="navbar-brand" href="#">Knowledge Hub Dashboard</a>
+        </div>
+    </nav>
+
+    <div class="container mt-4">
+        <div class="row mb-4">
+            <div class="col-md-6">
+                <h2>System Statistics</h2>
+            </div>
+            <div class="col-md-6 text-end">
+                <div class="input-group">
+                    <label class="input-group-text" for="hostnameSelect">Device History</label>
+                    <select class="form-select" id="hostnameSelect">
+                        <option selected disabled>Choose a device...</option>
+                        {% for stat in stats %}
+                            <option value="{{ stat.hostname }}">{{ stat.hostname }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+            </div>
+        </div>
+
+        <div id="chartSection" class="card d-none">
+            <div class="card-body">
+                <h5 class="card-title">Performance History: <span id="selectedHostname"></span></h5>
+                <div class="chart-container">
+                    <canvas id="statsChart"></canvas>
+                </div>
+            </div>
+        </div>
+        
+        {% if stats %}
+            <div class="table-responsive">
+                <table class="table table-striped table-hover bg-white">
+                    <thead class="table-dark">
+                        <tr>
+                            <th>Hostname</th>
+                            <th>Timestamp</th>
+                            <th>CPU %</th>
+                            <th>RAM %</th>
+                            <th>Disk %</th>
+                            <th>Net Sent (MB)</th>
+                            <th>Net Recv (MB)</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for stat in stats %}
+                        <tr class="clickable-row" onclick="selectDevice('{{ stat.hostname }}')">
+                            <td><strong>{{ stat.hostname }}</strong></td>
+                            <td>{{ stat.timestamp }}</td>
+                            <td>
+                                <div class="progress" style="height: 20px;">
+                                    <div class="progress-bar {% if stat.cpu_usage > 80 %}bg-danger{% elif stat.cpu_usage > 50 %}bg-warning{% else %}bg-success{% endif %}" 
+                                         role="progressbar" style="width: {{ stat.cpu_usage }}%;" 
+                                         aria-valuenow="{{ stat.cpu_usage }}" aria-valuemin="0" aria-valuemax="100">{{ stat.cpu_usage }}%</div>
+                                </div>
+                            </td>
+                            <td>
+                                <div class="progress" style="height: 20px;">
+                                    <div class="progress-bar {% if stat.ram_usage > 80 %}bg-danger{% elif stat.ram_usage > 50 %}bg-warning{% else %}bg-success{% endif %}" 
+                                         role="progressbar" style="width: {{ stat.ram_usage }}%;" 
+                                         aria-valuenow="{{ stat.ram_usage }}" aria-valuemin="0" aria-valuemax="100">{{ stat.ram_usage }}%</div>
+                                </div>
+                            </td>
+                            <td>
+                                <div class="progress" style="height: 20px;">
+                                    <div class="progress-bar {% if stat.disk_usage > 80 %}bg-danger{% elif stat.disk_usage > 50 %}bg-warning{% else %}bg-success{% endif %}" 
+                                         role="progressbar" style="width: {{ stat.disk_usage }}%;" 
+                                         aria-valuenow="{{ stat.disk_usage }}" aria-valuemin="0" aria-valuemax="100">{{ stat.disk_usage }}%</div>
+                                </div>
+                            </td>
+                            <td>{{ (stat.network_sent / 1024 / 1024) | round(2) }} MB</td>
+                            <td>{{ (stat.network_recv / 1024 / 1024) | round(2) }} MB</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        {% else %}
+            <div class="alert alert-info">No statistics available yet. Make sure the agent is running and reporting to the API.</div>
+        {% endif %}
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+        let statsChart = null;
+
+        document.getElementById('hostnameSelect').addEventListener('change', function() {
+            selectDevice(this.value);
+        });
+
+        function selectDevice(hostname) {
+            // Update dropdown selection if it's not already set
+            const select = document.getElementById('hostnameSelect');
+            if (select.value !== hostname) {
+                select.value = hostname;
+            }
+            
+            document.getElementById('selectedHostname').innerText = hostname;
+            document.getElementById('chartSection').classList.remove('d-none');
+            
+            // Scroll to chart for better UX
+            document.getElementById('chartSection').scrollIntoView({ behavior: 'smooth' });
+            
+            fetchStats(hostname);
+        }
+
+        async function fetchStats(hostname) {
+            try {
+                // Use the proxy route to avoid CORS and networking issues
+                const response = await fetch(`/api_proxy/stats/${hostname}`);
+                const data = await response.json();
+                updateChart(data);
+            } catch (error) {
+                console.error('Error fetching historical stats:', error);
+            }
+        }
+
+        function updateChart(data) {
+            const labels = data.map(s => new Date(s.timestamp).toLocaleTimeString());
+            const cpuData = data.map(s => s.cpu_usage);
+            const ramData = data.map(s => s.ram_usage);
+            
+            // Calculate mbit/s
+            // Formula: (bytes_now - bytes_prev) * 8 / interval_seconds / 1,000,000
+            const netSpeedData = data.map((s, i) => {
+                if (i === 0) return 0;
+                const prev = data[i-1];
+                const timeDiff = (new Date(s.timestamp) - new Date(prev.timestamp)) / 1000;
+                if (timeDiff <= 0) return 0;
+                
+                const sentDiff = s.network_sent - prev.network_sent;
+                const recvDiff = s.network_recv - prev.network_recv;
+                const totalBits = (sentDiff + recvDiff) * 8;
+                return (totalBits / timeDiff / 1000000).toFixed(2);
+            });
+
+            if (statsChart) {
+                statsChart.destroy();
+            }
+
+            const ctx = document.getElementById('statsChart').getContext('2d');
+            statsChart = new Chart(ctx, {
+                type: 'line',
+                data: {
+                    labels: labels,
+                    datasets: [
+                        {
+                            label: 'CPU %',
+                            data: cpuData,
+                            borderColor: 'rgba(255, 99, 132, 1)',
+                            backgroundColor: 'rgba(255, 99, 132, 0.2)',
+                            yAxisID: 'y',
+                            tension: 0.1
+                        },
+                        {
+                            label: 'RAM %',
+                            data: ramData,
+                            borderColor: 'rgba(54, 162, 235, 1)',
+                            backgroundColor: 'rgba(54, 162, 235, 0.2)',
+                            yAxisID: 'y',
+                            tension: 0.1
+                        },
+                        {
+                            label: 'Network (mbit/s)',
+                            data: netSpeedData,
+                            borderColor: 'rgba(75, 192, 192, 1)',
+                            backgroundColor: 'rgba(75, 192, 192, 0.2)',
+                            yAxisID: 'y1',
+                            tension: 0.1
+                        }
+                    ]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    scales: {
+                        y: {
+                            type: 'linear',
+                            display: true,
+                            position: 'left',
+                            title: { display: true, text: 'Usage %' },
+                            min: 0,
+                            max: 100
+                        },
+                        y1: {
+                            type: 'linear',
+                            display: true,
+                            position: 'right',
+                            title: { display: true, text: 'mbit/s' },
+                            grid: { drawOnChartArea: false },
+                            min: 0
+                        }
+                    }
+                }
+            });
+        }
+    </script>
+</body>
+</html>

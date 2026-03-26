@@ -1,0 +1,94 @@
+openapi: 3.0.0
+info:
+  title: Knowledge Hub API
+  description: API for monitoring system statistics.
+  version: 1.0.0
+servers:
+  - url: http://localhost:5000/api/v1
+    description: Local development server
+paths:
+  /stats:
+    get:
+      summary: Get the latest system stats for all devices
+      responses:
+        '200':
+          description: A list of the most recent system stats
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/SystemStats'
+    post:
+      summary: Report system stats
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/SystemStats'
+      responses:
+        '201':
+          description: Stats reported successfully
+        '400':
+          description: Invalid input
+  /stats/{hostname}:
+    get:
+      summary: Get historical stats for a specific hostname
+      parameters:
+        - name: hostname
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Historical stats for the device
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/SystemStats'
+
+components:
+  schemas:
+    SystemStats:
+      type: object
+      properties:
+        id:
+          type: integer
+          readOnly: true
+        hostname:
+          type: string
+          description: Hostname of the reporting device
+        timestamp:
+          type: string
+          format: date-time
+        disk_usage:
+          type: number
+          format: float
+          description: Disk usage percentage
+        cpu_usage:
+          type: number
+          format: float
+          description: CPU usage percentage
+        ram_usage:
+          type: number
+          format: float
+          description: RAM usage percentage
+        network_sent:
+          type: integer
+          format: int64
+          description: Total bytes sent
+        network_recv:
+          type: integer
+          format: int64
+          description: Total bytes received
+      required:
+        - hostname
+        - disk_usage
+        - cpu_usage
+        - ram_usage
+        - network_sent
+        - network_recv
