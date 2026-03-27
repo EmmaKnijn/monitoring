@@ -9,6 +9,7 @@ import logging
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
 
 API_URL = os.getenv('API_URL', 'http://localhost:5000/api/v1/stats')
+API_KEY = os.getenv('API_KEY', 'change-me')
 INTERVAL = int(os.getenv('REPORT_INTERVAL', '10'))
 # Allow overriding hostname from environment to use the actual host's hostname
 HOSTNAME = os.getenv('HOST_HOSTNAME', socket.gethostname())
@@ -36,7 +37,8 @@ def get_system_stats():
 def report_stats(stats):
     """Send collected statistics to the API receiver."""
     try:
-        response = requests.post(API_URL, json=stats, timeout=5)
+        headers = {'X-API-Key': API_KEY}
+        response = requests.post(API_URL, json=stats, headers=headers, timeout=5)
         response.raise_for_status()
         logging.info(f"Reported stats for {stats['hostname']}: {response.status_code}")
     except requests.exceptions.RequestException as e:

@@ -10,6 +10,8 @@ paths:
   /stats:
     get:
       summary: Get the latest system stats for all devices
+      security:
+        - ApiKeyAuth: []
       responses:
         '200':
           description: A list of the most recent system stats
@@ -19,8 +21,12 @@ paths:
                 type: array
                 items:
                   $ref: '#/components/schemas/SystemStats'
+        '401':
+          description: Unauthorized (missing or invalid API key)
     post:
       summary: Report system stats
+      security:
+        - ApiKeyAuth: []
       requestBody:
         required: true
         content:
@@ -32,9 +38,13 @@ paths:
           description: Stats reported successfully
         '400':
           description: Invalid input
+        '401':
+          description: Unauthorized (missing or invalid API key)
   /stats/{hostname}:
     get:
       summary: Get historical stats for a specific hostname
+      security:
+        - ApiKeyAuth: []
       parameters:
         - name: hostname
           in: path
@@ -50,8 +60,15 @@ paths:
                 type: array
                 items:
                   $ref: '#/components/schemas/SystemStats'
+        '401':
+          description: Unauthorized (missing or invalid API key)
 
 components:
+  securitySchemes:
+    ApiKeyAuth:
+      type: apiKey
+      in: header
+      name: X-API-Key
   schemas:
     SystemStats:
       type: object
