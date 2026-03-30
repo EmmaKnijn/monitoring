@@ -26,6 +26,8 @@ jobs:
 
       - name: Package API app
         run: |
+          echo "--- api/main.py (build workspace) ---"
+          sed -n '1,20p' api/main.py
           cd api
           zip -r ../api.zip .
 
@@ -63,6 +65,8 @@ jobs:
         run: |
           ls -la ./artifact
           unzip -l ./artifact/api.zip | head -n 80
+          echo "--- api/main.py (from api.zip) ---"
+          unzip -p ./artifact/api.zip main.py | sed -n '1,20p'
       
       - name: Login to Azure
         uses: azure/login@v2
@@ -78,5 +82,5 @@ jobs:
           app-name: 'monitoring-api'
           slot-name: 'Production'
           package: ./artifact/api.zip
-          startup-command: 'gunicorn --chdir ${APP_PATH:-/home/site/wwwroot} --bind=0.0.0.0:$PORT main:app || gunicorn --chdir ${APP_PATH:-/home/site/wwwroot} --bind=0.0.0.0:$PORT api.main:app'
+          startup-command: 'gunicorn --chdir ${APP_PATH:-/home/site/wwwroot} --bind=0.0.0.0:$PORT api.main:app'
           
