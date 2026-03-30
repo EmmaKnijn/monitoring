@@ -72,6 +72,6 @@ jobs:
         with:
           app-name: 'monitoring-api'
           slot-name: 'Production'
-          package: ./artifact/api
+          package: ./artifact
           startup-command: 'gunicorn --bind=0.0.0.0:$PORT main:app'
           
