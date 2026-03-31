@@ -20,6 +20,10 @@ def create_app():
 
     db.init_app(app)
 
+    # Create tables if they don't exist
+    with app.app_context():
+        db.create_all()
+
     # Register blueprints
     app.register_blueprint(api_v1, url_prefix='/api/v1')
     app.register_blueprint(swagger_blueprint, url_prefix=SWAGGER_URL)
