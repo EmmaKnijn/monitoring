@@ -13,6 +13,6 @@ RUN pip install --no-cache-dir -r requirements.txt
 COPY . .
 #COPY ../OpenAPI.yml /OpenAPI.yml # Temporarily disabled TODO: ALLOW COPYING
 
-EXPOSE 5000
+EXPOSE 80
 
 CMD ["python", "main.py"]
