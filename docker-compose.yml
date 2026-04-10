@@ -22,7 +22,7 @@ services:
     container_name: kh-api
     restart: always
     ports:
-      - "5000:5000"
+      - "5000:80"
     environment:
       - DB_USER=root
       - DB_PASSWORD=password
@@ -38,7 +38,7 @@ services:
     container_name: kh-agent
     restart: always
     environment:
-      - API_URL=http://api:5000/api/v1/stats
+      - API_URL=http://api:80/api/v1/stats
       - API_KEY=${API_KEY:-change-me}
       - REPORT_INTERVAL=10
       - HOST_HOSTNAME=${HOSTNAME:-local-host}
@@ -50,9 +50,9 @@ services:
     container_name: kh-web
     restart: always
     ports:
-      - "8080:8080"
+      - "8080:80"
     environment:
-      - API_URL=http://api:5000/api/v1/stats
+      - API_URL=http://api:80/api/v1/stats
       - API_KEY=${API_KEY:-change-me}
     depends_on:
       - api

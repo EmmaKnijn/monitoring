@@ -5,7 +5,7 @@ from .models import db
 from .routes import api_v1
 from .swagger import swagger_blueprint, SWAGGER_URL
 
-def create_app():
+def create_app(test_config=None):
     app = Flask(__name__)
     CORS(app)
 
@@ -14,9 +14,16 @@ def create_app():
     db_password = os.getenv('DB_PASSWORD', 'password')
     db_host = os.getenv('DB_HOST', 'localhost')
     db_name = os.getenv('DB_NAME', 'system_stats')
-    
-    app.config['SQLALCHEMY_DATABASE_URI'] = f'mysql+mysqlconnector://{db_user}:{db_password}@{db_host}/{db_name}'
+    database_url = os.getenv(
+        'DATABASE_URL',
+        f'mysql+mysqlconnector://{db_user}:{db_password}@{db_host}/{db_name}'
+    )
+
+    app.config['SQLALCHEMY_DATABASE_URI'] = database_url
     app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
+
+    if test_config:
+        app.config.update(test_config)
 
     db.init_app(app)
 

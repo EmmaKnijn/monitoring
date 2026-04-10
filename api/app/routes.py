@@ -3,13 +3,13 @@ from flask import Blueprint, request, jsonify
 from .models import db, Stats
 
 api_v1 = Blueprint('api_v1', __name__)
-API_KEY = os.getenv('API_KEY', 'change-me')
 
 
 @api_v1.before_request
 def verify_api_key():
+    expected_api_key = os.getenv('API_KEY', 'change-me')
     provided_key = request.headers.get('X-API-Key')
-    if provided_key != API_KEY:
+    if provided_key != expected_api_key:
         return jsonify({'error': 'Unauthorized'}), 401
 
     return None

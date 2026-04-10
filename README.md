@@ -59,3 +59,23 @@ The system supports multiple reporting agents. Each agent reports using its own 
 
 ## Coding Style
 This project follows **PEP-8** coding standards for all Python components.
+
+## API Tests
+
+Unit tests for the API live in `api/tests` and use `pytest`.
+
+From the repository root, run:
+
+```bash
+python -m pip install -r api/requirements.txt
+cd api
+python -m pytest -q
+```
+
+If you are using the project virtual environment (`.venv`), run:
+
+```bash
+.venv/bin/python -m pip install -r api/requirements.txt
+cd api
+../.venv/bin/python -m pytest -q
+```
