@@ -26,8 +26,14 @@ This will start:
 
 The application can be configured using environment variables in `docker-compose.yml`:
 
+### Shared Security Setting
+- `API_KEY`: Shared key used to authenticate requests between the agent and the API.
+- Default value is `change-me`, but you should set a custom value in production.
+- The same value must be configured for both the API service and all agent/web clients that call the API.
+
 ### Agent
 - `API_URL`: The full URL of the API endpoint (e.g., `http://api:5000/api/v1/stats`).
+- `API_KEY`: API authentication key sent in the `X-API-Key` header.
 - `REPORT_INTERVAL`: Frequency of reporting in seconds (default: `10`).
 - `HOST_HOSTNAME`: The hostname to report. In `docker-compose.yml`, this is mapped to `${HOSTNAME}` to capture the actual host machine's name.
 
@@ -36,9 +42,11 @@ The application can be configured using environment variables in `docker-compose
 - `DB_PASSWORD`: MySQL password (default: `password`).
 - `DB_HOST`: MySQL hostname (default: `db`).
 - `DB_NAME`: MySQL database name (default: `system_stats`).
+- `API_KEY`: Expected API authentication key for incoming requests.
 
 ### Web UI
 - `API_URL`: The internal URL used by the web server to fetch stats from the API (default: `http://api:5000/api/v1/stats`).
+- `API_KEY`: API authentication key used by the web server when calling the API.
 
 ## Accessing the Application
 
